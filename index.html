@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For My Valentine</title>
+    <style>
+        :root {
+            --bg-color: #fdf2f2;
+            --text-color: #d63384;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        /* The Overlay to unlock sound */
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-color);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            background-color: var(--text-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3);
+        }
+
+        #message {
+            margin-top: 30px;
+            font-size: 2.5rem;
+            color: var(--text-color);
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 1s ease-in;
+            text-align: center;
+        }
+
+        .player-container {
+            position: relative;
+            width: 350px;
+            height: 350px;
+            cursor: grab;
+            visibility: hidden; /* Hidden until start is clicked */
+        }
+
+        .sleeve {
+            position: absolute;
+            z-index: 2;
+            width: 100%; height: 100%;
+            background-image: url('cover.jpg'); 
+            background-size: cover;
+            box-shadow: 10px 10px 20px rgba(0,0,0,0.3);
+            border-radius: 4px;
+        }
+
+        .record {
+            position: absolute;
+            z-index: 1;
+            top: 5px;
+            left: 50px; 
+            width: 340px; height: 340px;
+            background: #111;
+            background: repeating-radial-gradient(circle, #111, #111 2px, #222 3px, #111 4px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .record-label {
+            width: 120px; height: 120px;
+            background-image: url('us.PNG');
+            background-size: cover;
+            background-position: center;
+            border-radius: 50%;
+            border: 2px solid #000;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .spinning { animation: spin 3s linear infinite; }
+
+        #youtube-player {
+            position: absolute;
+            top: -1000px; /* Move far off screen instead of 0 opacity */
+        }
+
+        .instructions {
+            position: absolute;
+            bottom: 50px;
+            color: #888;
+            font-style: italic;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Start Overlay -->
+    <div id="overlay">
+        <p style="color: #d63384; margin-bottom: 20px;">Click to open your gift</p>
+        <button id="start-btn">Open ❤️</button>
+    </div>
+
+    <div id="youtube-player"></div>
+
+    <div class="player-container" id="container">
+        <div class="sleeve"></div>
+        <div class="record" id="record">
+            <div class="record-label"></div>
+        </div>
+    </div>
+
+    <div id="message">Happy Valentine's Day! ❤️</div>
+    <div class="instructions" id="hint">Pull the record out...</div>
+
+    <script>
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        var player;
+        var playerReady = false;
+
+        function onYouTubeIframeAPIReady() {
+            player = new YT.Player('youtube-player', {
+                height: '0',
+                width: '0',
+                videoId: 'NQuVROa089w', // Soul Meets Body
+                playerVars: {
+                    'autoplay': 0,
+                    'controls': 0,
+                    'disablekb': 1,
+                    'fs': 0
+                },
+                events: {
+                    'onReady': function() { playerReady = true; }
+                }
+            });
+        }
+
+        // --- Logic to "Unlock" Audio ---
+        const overlay = document.getElementById('overlay');
+        const container = document.getElementById('container');
+        const hint = document.getElementById('hint');
+
+        overlay.addEventListener('click', () => {
+            if (!playerReady) return; 
+
+            // 1. Hide overlay
+            overlay.style.display = 'none';
+            container.style.visibility = 'visible';
+            hint.style.visibility = 'visible';
+
+            // 2. "Prime" the player (Play and pause immediately while muted)
+            // This tricks the browser into allowing sound later
+            player.mute();
+            player.playVideo();
+            setTimeout(() => {
+                player.pause();
+                player.unMute();
+                player.setVolume(100);
+            }, 500);
+        });
+
+        // --- Dragging Logic ---
+        const record = document.getElementById('record');
+        const message = document.getElementById('message');
+        let isDragging = false;
+        let startX = 0;
+        let hasPlayed = false;
+
+        container.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+
+        container.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
+        window.addEventListener('touchmove', (e) => drag(e.touches[0]));
+        window.addEventListener('touchend', endDrag);
+
+        function startDrag(e) {
+            if (hasPlayed) return;
+            isDragging = true;
+            startX = e.clientX;
+            container.style.cursor = 'grabbing';
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            let deltaX = e.clientX - startX;
+            let newLeft = 50 + deltaX;
+            if (newLeft < 50) newLeft = 50;
+            if (newLeft > 280) newLeft = 280; 
+            record.style.left = newLeft + 'px';
+
+            if (newLeft > 250 && !hasPlayed) {
+                startCelebration();
+            }
+        }
+
+        function endDrag() {
+            isDragging = false;
+            container.style.cursor = 'grab';
+            if (!hasPlayed) {
+                record.style.transition = 'left 0.5s ease';
+                record.style.left = '50px';
+                setTimeout(() => record.style.transition = '', 500);
+            }
+        }
+
+        function startCelebration() {
+            hasPlayed = true;
+            hint.style.display = 'none';
+            record.style.transition = 'all 0.8s ease-out';
+            record.style.left = '320px';
+            
+            // Now the sound will work!
+            player.playVideo();
+
+            setTimeout(() => {
+                record.classList.add('spinning');
+            }, 800);
+
+            message.style.opacity = '1';
+        }
+    </script>
+</body>
+</html>
