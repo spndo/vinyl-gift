@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>For My Valentine</title>
     <style>
         :root {
             --bg-color: #fdf2f2;
-            --text-color: #d63384;
+            --pink-dark: #d63384;
+            --size: min(65vw, 300px); 
         }
 
         body {
@@ -15,7 +16,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; 
+            padding-top: 8vh;
             height: 100vh;
             margin: 0;
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -32,12 +34,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            text-align: center;
         }
 
         #start-btn {
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            background-color: var(--text-color);
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            background-color: var(--pink-dark);
             color: white;
             border: none;
             border-radius: 50px;
@@ -45,20 +48,10 @@
             box-shadow: 0 4px 15px rgba(214, 51, 132, 0.3);
         }
 
-        #message {
-            margin-top: 30px;
-            font-size: 2.5rem;
-            color: var(--text-color);
-            font-weight: bold;
-            opacity: 0;
-            transition: opacity 1s ease-in;
-            text-align: center;
-        }
-
         .player-container {
             position: relative;
-            width: 350px;
-            height: 350px;
+            width: var(--size);
+            height: var(--size);
             cursor: grab;
             visibility: hidden;
         }
@@ -69,26 +62,27 @@
             width: 100%; height: 100%;
             background-image: url('cover.jpg'); 
             background-size: cover;
-            box-shadow: 10px 10px 20px rgba(0,0,0,0.3);
-            border-radius: 4px;
+            background-position: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            border-radius: 6px;
         }
 
         .record {
             position: absolute;
             z-index: 1;
-            top: 5px;
-            left: 50px; 
-            width: 340px; height: 340px;
+            top: 10%; left: 2.5%;
+            width: 95%; height: 95%;
             background: #111;
             background: repeating-radial-gradient(circle, #111, #111 2px, #222 3px, #111 4px);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
         }
 
         .record-label {
-            width: 120px; height: 120px;
+            width: 35%; height: 35%;
             background-image: url('us.PNG');
             background-size: cover;
             background-position: center;
@@ -96,35 +90,56 @@
             border: 2px solid #000;
         }
 
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+        #message {
+            position: fixed;
+            bottom: 10vh;
+            font-size: clamp(1.8rem, 6vw, 2.8rem);
+            font-weight: 800;
+            text-align: center;
+            width: 100%;
+            opacity: 0;
+            transition: opacity 1.5s ease-in;
+            background: linear-gradient(to right, var(--pink-dark) 20%, #ff69b4 40%, #ffffff 50%, #ff69b4 60%, var(--pink-dark) 80%);
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 3s linear infinite, heartbeat 2s ease-in-out infinite;
+            pointer-events: none;
         }
 
-        .spinning { animation: spin 3s linear infinite; }
-
-        #youtube-player {
-            position: absolute;
-            top: -5000px; /* Hide it far away */
-        }
+        @keyframes shine { to { background-position: 200% center; } }
+        @keyframes heartbeat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 
         .instructions {
-            position: absolute;
-            bottom: 50px;
+            position: fixed;
+            bottom: 30px;
             color: #888;
             font-style: italic;
+            font-size: 0.9rem;
             visibility: hidden;
+        }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinning { animation: spin 3s linear infinite; }
+
+        /* The YouTube Player box */
+        #youtube-player {
+            position: absolute;
+            top: 0; left: 0;
+            width: 200px; height: 200px;
+            z-index: -1;
+            opacity: 0.01;
         }
     </style>
 </head>
 <body>
 
     <div id="overlay">
-        <p style="color: #d63384; margin-bottom: 20px;">For my favorite person</p>
-        <button id="start-btn">Open Your Gift ❤️</button>
+        <p style="color: var(--pink-dark); margin-bottom: 20px;">I made something for you...</p>
+        <button id="start-btn">Open It ❤️</button>
     </div>
 
-    <!-- The actual YouTube player -->
     <div id="youtube-player"></div>
 
     <div class="player-container" id="container">
@@ -135,38 +150,44 @@
     </div>
 
     <div id="message">Happy Valentine's Day! ❤️</div>
-    <div class="instructions" id="hint">Pull the record out...</div>
+    <div class="instructions" id="hint">Pull the record down...</div>
 
     <script>
-        var tag = document.createElement('script');
-        tag.src = "https://www.youtube.com/iframe_api";
-        var firstScriptTag = document.getElementsByTagName('script')[0];
-        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
-        var player;
-        var playerReady = false;
-
-        function onYouTubeIframeAPIReady() {
-            player = new YT.Player('youtube-player', {
-                height: '360',
-                width: '640',
+        // 1. Define global setup function IMMEDIATELY
+        window.playerReady = false;
+        
+        window.onYouTubeIframeAPIReady = function() {
+            console.log("YouTube API called this function!");
+            window.player = new YT.Player('youtube-player', {
+                height: '200',
+                width: '200',
                 videoId: 'NQuVROa089w',
                 playerVars: {
                     'autoplay': 0,
                     'controls': 0,
                     'disablekb': 1,
-                    'showinfo': 0,
-                    'modestbranding': 1
+                    'enablejsapi': 1,
+                    'origin': window.location.origin
                 },
                 events: {
-                    'onReady': function() { 
-                        playerReady = true; 
-                        console.log("YouTube API is ready!");
-                    }
+                    'onReady': onPlayerReady,
+                    'onError': (e) => console.log("YT Error: ", e.data)
                 }
             });
+        };
+
+        function onPlayerReady(event) {
+            console.log("Player is fully ready to rock!");
+            window.playerReady = true;
         }
 
+        // 2. Load the script
+        var tag = document.createElement('script');
+        tag.src = "https://www.youtube.com/iframe_api";
+        var firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+        // 3. Elements and Drag Logic
         const overlay = document.getElementById('overlay');
         const container = document.getElementById('container');
         const hint = document.getElementById('hint');
@@ -174,8 +195,13 @@
         const message = document.getElementById('message');
 
         overlay.addEventListener('click', () => {
-            if (!playerReady) {
-                alert("Give it one more second to load the music!");
+            // Debug check: If playerReady is false, check if YT exists at all
+            if (!window.playerReady) {
+                if (window.YT && window.YT.Player) {
+                    console.log("YT exists but event didn't fire. Forcing init...");
+                    onYouTubeIframeAPIReady(); // Try forcing it
+                }
+                alert("The music is still loading. If it takes too long, check if your Ad-Blocker is blocking YouTube! ❤️");
                 return;
             } 
 
@@ -183,77 +209,68 @@
             container.style.visibility = 'visible';
             hint.style.visibility = 'visible';
 
-            // PRIME THE PLAYER: Play then pause quickly to bypass browser blocks
-            if (player && player.playVideo) {
-                player.mute();
-                player.playVideo();
-                setTimeout(() => {
-                    player.pauseVideo(); // CORRECTED FUNCTION NAME
-                    player.unMute();
-                    player.setVolume(100);
-                }, 500);
+            // Prime the player on the click event
+            if (window.player && window.player.playVideo) {
+                window.player.playVideo();
+                setTimeout(() => { window.player.pauseVideo(); }, 150);
             }
         });
 
-        // Dragging Logic
         let isDragging = false;
-        let startX = 0;
+        let startY = 0;
         let hasPlayed = false;
-
-        container.addEventListener('mousedown', startDrag);
-        window.addEventListener('mousemove', drag);
-        window.addEventListener('mouseup', endDrag);
-        container.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
-        window.addEventListener('touchmove', (e) => drag(e.touches[0]));
-        window.addEventListener('touchend', endDrag);
 
         function startDrag(e) {
             if (hasPlayed) return;
             isDragging = true;
-            startX = e.clientX;
-            container.style.cursor = 'grabbing';
+            startY = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            record.style.transition = 'none';
         }
 
         function drag(e) {
             if (!isDragging) return;
-            let deltaX = e.clientX - startX;
-            let newLeft = 50 + deltaX;
-            if (newLeft < 50) newLeft = 50;
-            if (newLeft > 280) newLeft = 280; 
-            record.style.left = newLeft + 'px';
+            const y = e.clientY || (e.touches ? e.touches[0].clientY : 0);
+            let deltaY = y - startY;
+            const containerHeight = container.offsetHeight;
+            let newTop = (containerHeight * 0.1) + deltaY;
 
-            if (newLeft > 250 && !hasPlayed) {
+            if (newTop < (containerHeight * 0.1)) newTop = containerHeight * 0.1;
+            if (newTop > containerHeight * 1.5) newTop = containerHeight * 1.5;
+
+            record.style.top = newTop + 'px';
+
+            if (newTop > containerHeight * 0.9 && !hasPlayed) {
                 startCelebration();
             }
         }
 
         function endDrag() {
+            if (!isDragging || hasPlayed) return;
             isDragging = false;
-            container.style.cursor = 'grab';
-            if (!hasPlayed) {
-                record.style.transition = 'left 0.5s ease';
-                record.style.left = '50px';
-                setTimeout(() => record.style.transition = '', 500);
-            }
+            record.style.transition = 'top 0.4s ease-out';
+            record.style.top = (container.offsetHeight * 0.1) + 'px';
         }
 
         function startCelebration() {
             hasPlayed = true;
+            isDragging = false;
             hint.style.display = 'none';
             record.style.transition = 'all 0.8s ease-out';
-            record.style.left = '320px';
+            record.style.top = (container.offsetHeight * 1.0) + 'px';
             
-            // Start the music for real
-            if (player && player.playVideo) {
-                player.playVideo();
+            if (window.player && window.player.playVideo) {
+                window.player.playVideo();
             }
-
-            setTimeout(() => {
-                record.classList.add('spinning');
-            }, 800);
-
+            setTimeout(() => { record.classList.add('spinning'); }, 800);
             message.style.opacity = '1';
         }
+
+        container.addEventListener('mousedown', startDrag);
+        window.addEventListener('mousemove', drag);
+        window.addEventListener('mouseup', endDrag);
+        container.addEventListener('touchstart', startDrag, {passive: false});
+        window.addEventListener('touchmove', drag, {passive: false});
+        window.addEventListener('touchend', endDrag);
     </script>
 </body>
 </html>
