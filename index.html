@@ -23,7 +23,6 @@
             touch-action: none;
         }
 
-        /* The Overlay to unlock sound */
         #overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -33,7 +32,6 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
         }
 
         #start-btn {
@@ -62,7 +60,7 @@
             width: 350px;
             height: 350px;
             cursor: grab;
-            visibility: hidden; /* Hidden until start is clicked */
+            visibility: hidden;
         }
 
         .sleeve {
@@ -107,7 +105,7 @@
 
         #youtube-player {
             position: absolute;
-            top: -1000px; /* Move far off screen instead of 0 opacity */
+            top: -5000px; /* Hide it far away */
         }
 
         .instructions {
@@ -121,12 +119,12 @@
 </head>
 <body>
 
-    <!-- Start Overlay -->
     <div id="overlay">
-        <p style="color: #d63384; margin-bottom: 20px;">Click to open your gift</p>
-        <button id="start-btn">Open ❤️</button>
+        <p style="color: #d63384; margin-bottom: 20px;">For my favorite person</p>
+        <button id="start-btn">Open Your Gift ❤️</button>
     </div>
 
+    <!-- The actual YouTube player -->
     <div id="youtube-player"></div>
 
     <div class="player-container" id="container">
@@ -150,48 +148,54 @@
 
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('youtube-player', {
-                height: '0',
-                width: '0',
-                videoId: 'NQuVROa089w', // Soul Meets Body
+                height: '360',
+                width: '640',
+                videoId: 'NQuVROa089w',
                 playerVars: {
                     'autoplay': 0,
                     'controls': 0,
                     'disablekb': 1,
-                    'fs': 0
+                    'showinfo': 0,
+                    'modestbranding': 1
                 },
                 events: {
-                    'onReady': function() { playerReady = true; }
+                    'onReady': function() { 
+                        playerReady = true; 
+                        console.log("YouTube API is ready!");
+                    }
                 }
             });
         }
 
-        // --- Logic to "Unlock" Audio ---
         const overlay = document.getElementById('overlay');
         const container = document.getElementById('container');
         const hint = document.getElementById('hint');
+        const record = document.getElementById('record');
+        const message = document.getElementById('message');
 
         overlay.addEventListener('click', () => {
-            if (!playerReady) return; 
+            if (!playerReady) {
+                alert("Give it one more second to load the music!");
+                return;
+            } 
 
-            // 1. Hide overlay
             overlay.style.display = 'none';
             container.style.visibility = 'visible';
             hint.style.visibility = 'visible';
 
-            // 2. "Prime" the player (Play and pause immediately while muted)
-            // This tricks the browser into allowing sound later
-            player.mute();
-            player.playVideo();
-            setTimeout(() => {
-                player.pause();
-                player.unMute();
-                player.setVolume(100);
-            }, 500);
+            // PRIME THE PLAYER: Play then pause quickly to bypass browser blocks
+            if (player && player.playVideo) {
+                player.mute();
+                player.playVideo();
+                setTimeout(() => {
+                    player.pauseVideo(); // CORRECTED FUNCTION NAME
+                    player.unMute();
+                    player.setVolume(100);
+                }, 500);
+            }
         });
 
-        // --- Dragging Logic ---
-        const record = document.getElementById('record');
-        const message = document.getElementById('message');
+        // Dragging Logic
         let isDragging = false;
         let startX = 0;
         let hasPlayed = false;
@@ -199,7 +203,6 @@
         container.addEventListener('mousedown', startDrag);
         window.addEventListener('mousemove', drag);
         window.addEventListener('mouseup', endDrag);
-
         container.addEventListener('touchstart', (e) => startDrag(e.touches[0]));
         window.addEventListener('touchmove', (e) => drag(e.touches[0]));
         window.addEventListener('touchend', endDrag);
@@ -240,8 +243,10 @@
             record.style.transition = 'all 0.8s ease-out';
             record.style.left = '320px';
             
-            // Now the sound will work!
-            player.playVideo();
+            // Start the music for real
+            if (player && player.playVideo) {
+                player.playVideo();
+            }
 
             setTimeout(() => {
                 record.classList.add('spinning');
